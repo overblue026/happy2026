@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>靳雨默的新年抽奖</title>
+    <style>
+        :root {
+            --primary-red: #d90616;
+            --dark-red: #8f000b;
+            --gold: #f5d17e;
+            --light-gold: #fff4d6;
+            --border-radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(180deg, var(--primary-red) 0%, var(--dark-red) 100%);
+            color: #333;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* 顶部紧凑化 */
+        header {
+            text-align: center;
+            padding: 10px 0 5px 0;
+            color: var(--gold);
+            flex-shrink: 0;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .subtitle {
+            font-size: 0.8rem;
+            opacity: 0.9;
+            margin-top: 2px;
+        }
+
+        /* 主内容区域 - 可滚动 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-y: auto;
+            padding-bottom: 20px;
+            width: 100%;
+        }
+
+        /* 主容器 */
+        .container {
+            width: 92%;
+            max-width: 350px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 244, 214, 0.3);
+            margin-top: 5px;
+            flex-shrink: 0;
+            /* 防止挤压 */
+        }
+
+        /* 抽奖网格 */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            margin-bottom: 10px;
+        }
+
+        .cell {
+            background: #fff;
+            aspect-ratio: 1;
+            border-radius: var(--border-radius);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2px;
+            text-align: center;
+            font-size: 9px;
+            position: relative;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .cell img {
+            width: 55%;
+            height: 55%;
+            object-fit: contain;
+            margin-bottom: 2px;
+        }
+
+        .cell.active {
+            background: var(--gold);
+            transform: scale(1.05);
+            box-shadow: 0 0 10px var(--gold), inset 0 0 2px #fff;
+            border: 2px solid #fff;
+            z-index: 2;
+        }
+
+        /* 控制区 */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+            width: 100%;
+        }
+
+        .info-panel {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            color: var(--gold);
+            font-size: 0.9rem;
+            font-weight: bold;
+            padding: 0 5px;
+        }
+
+        button {
+            border: none;
+            outline: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .btn-main {
+            background: linear-gradient(to bottom, #fce38a, #f38181);
+            color: var(--dark-red);
+            padding: 10px 0;
+            font-size: 1.3rem;
+            border-radius: 50px;
+            box-shadow: 0 4px 0 #c0392b, 0 5px 10px rgba(0, 0, 0, 0.3);
+            width: 95%;
+        }
+
+        .btn-main:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #c0392b;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            font-size: 0.8rem;
+            flex: 1;
+        }
+
+        /* --- 新增：大奖解锁卡片 (独立显示) --- */
+        .unlock-card {
+            display: none;
+            /* 初始隐藏 */
+            width: 92%;
+            max-width: 350px;
+            background: #ff753a;
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .prize-target-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #eee;
+        }
+
+        .target-img {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-right: 12px;
+            background: #f9f9f9;
+        }
+
+        .target-desc {
+            flex: 1;
+        }
+
+        .target-title {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 2px;
+        }
+
+        .target-name {
+            font-size: 1.1rem;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 16px;
+            background: #eee;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00c6ff, #0072ff);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            color: #333;
+            font-weight: bold;
+            z-index: 2;
+        }
+
+        .btn-unlock {
+            width: 100%;
+            padding: 10px;
+            background: #ccc;
+            color: #fff;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-top: 5px;
+        }
+
+        .btn-unlock.active {
+            background: linear-gradient(90deg, #11998e, #38ef7d);
+            animation: pulse 1.5s infinite;
+        }
+
+        /* 底部单独的友情链接 */
+        .footer-simple {
+            width: 100%;
+            text-align: center;
+            padding: 15px 0;
+            flex-shrink: 0;
+        }
+
+        .friend-link {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .friend-link a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.4);
+        }
+
+        /* 弹窗样式 (保持) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+        }
+
+        .modal {
+            background: #fff;
+            width: 85%;
+            max-width: 320px;
+            border-radius: 15px;
+            padding: 20px;
+            transform: scale(0.9);
+            transition: transform 0.2s;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-overlay.show .modal {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            text-align: center;
+            color: var(--primary-red);
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            font-size: 20px;
+            color: #999;
+            cursor: pointer;
+        }
+
+        .task-item {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #eee;
+            font-size: 0.9rem;
+        }
+
+        .task-input {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+
+        .task-btn {
+            background: var(--primary-red);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            width: 100%;
+            font-size: 0.85rem;
+        }
+
+        .result-img {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 15px;
+            display: block;
+            object-fit: contain;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.02);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>🎉 靳雨默的新年抽奖</h1>
+        <div class="subtitle">Happy New Year 2026</div>
+    </header>
+
+    <div class="main-content">
+        <div class="container">
+            <div class="grid" id="lotteryGrid"></div>
+
+            <div class="controls">
+                <div class="info-panel">
+                    <span>剩余次数: <span id="spinCount">0</span></span>
+                    <span>💎 钻石: <span id="diamondCount">0</span></span>
+                </div>
+
+                <button class="btn-main" id="spinBtn" onclick="startSpin()">立即抽奖</button>
+
+                <div class="action-buttons">
+                    <button class="btn-secondary" onclick="openModal('rewardsModal')">我的奖励 🎁</button>
+                    <button class="btn-secondary" onclick="openModal('taskModal'); renderTasks();">获取次数 📝</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="unlock-card" id="unlockCard">
+            <div class="prize-target-info">
+                <img src="" id="targetPrizeImg" class="target-img">
+                <div class="target-desc">
+                    <div class="target-title">正在解锁大奖</div>
+                    <div class="target-name" id="targetPrizeName">???</div>
+                </div>
+                <div style="font-size:1.2rem;">🔒</div>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+                <div class="progress-text" id="progressText">0/150</div>
+            </div>
+            <button class="btn-unlock" id="unlockBtn" onclick="unlockGrandPrize()">钻石不足，去答题！</button>
+        </div>
+    </div>
+
+    <div class="footer-simple">
+        <div class="friend-link">
+            <a href="http://camera.overblue.cn" target="_blank">camera.overblue.cn</a>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="taskModal">
+        <div class="modal">
+            <span class="close-btn" onclick="closeModal('taskModal')">&times;</span>
+            <div class="modal-title" id="taskTitle">完成任务获取次数</div>
+            <div id="taskListContent"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="resultModal">
+        <div class="modal" style="text-align: center;">
+            <div class="modal-title">🎉 恭喜获得 🎉</div>
+            <img src="" alt="奖品" id="resultImage" class="result-img">
+            <div class="result-text" id="resultName"></div>
+            <button class="btn-main" style="font-size: 1rem; padding: 10px 30px;" onclick="claimReward()">开心收下</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="rewardsModal">
+        <div class="modal">
+            <span class="close-btn" onclick="closeModal('rewardsModal')">&times;</span>
+            <div class="modal-title">我的奖励记录</div>
+            <div id="myRewardsList" style="max-height: 250px; overflow-y: auto;">
+                <p style="text-align:center; color:#999; font-size:0.9rem;">暂无记录</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="unlockSuccessModal">
+        <div class="modal" style="text-align: center;">
+            <div class="modal-title">🔓 解锁成功！</div>
+            <img src="" alt="大奖" id="grandPrizeImg" class="result-img">
+            <div class="result-text" id="grandPrizeText"></div>
+            <p style="font-size:0.9rem; color:#666;">快截图找OverBlue兑换吧！</p>
+            <button class="btn-main" onclick="closeModal('unlockSuccessModal')">太棒了吧</button>
+        </div>
+    </div>
+
+    <audio id="bgm" src="./music/bgm.mp3" loop></audio>
+
+    <script>
+        // --- 数据定义 ---
+        const prizes = [
+            { id: 0, name: "谢谢参与\n再接再厉", type: 0, img: "./image/thanks.png" },
+            { id: 1, name: "马到成功！\n万事如意！", type: 1, img: "./image/bless1.png" },
+            { id: 2, name: "谢谢参与\n下次好运", type: 0, img: "./image/thanks.png" },
+            { id: 3, name: "马上有钱\n马年喜乐！！", type: 1, img: "./image/bless2.png" },
+            { id: 4, name: "10个钻石", type: 2, img: "./image/diamond.png" },
+            { id: 5, name: "心想事成\n好运连连！", type: 1, img: "./image/bless3.png" },
+            { id: 6, name: "10个钻石", type: 2, img: "./image/diamond.png" },
+            { id: 7, name: "身体健康\n平安喜乐！", type: 1, img: "./image/bless4.png" },
+            { id: 8, name: "10个钻石", type: 2, img: "./image/diamond.png" },
+            { id: 9, name: "谢谢参与\n擦肩而过", type: 0, img: "./image/thanks.png" },
+            { id: 10, name: "10个钻石", type: 2, img: "./image/diamond.png" },
+            // 神秘大奖 (type 3)
+            { id: 11, name: "361°精致喷雾", type: 3, code: 'lsy', img: "./image/spray.png" },
+            { id: 12, name: "古茗奶茶一杯", type: 3, code: 'wjx', img: "./image/guming.png" },
+            { id: 13, name: "瑞幸咖啡一杯", type: 3, code: 'yfk', img: "./image/luckin.png" },
+            { id: 14, name: "请靳雨默喝奶茶", type: 3, code: 'hi2026', img: "./image/milktea.png" },
+            { id: 15, name: "靳雨默的专属祝福", type: 3, code: 'jymyyds', img: "./image/special.png" }
+        ];
+
+        const riddles = [
+            { q: "书店里买不到什么书？", o: ["漫画书", "童话书", "遗书", "历史书"], a: "C" },
+            { q: "什么动物走路最容易摔倒？", o: ["狐狸", "兔子", "乌龟", "羊"], a: "A" },
+            { q: "什么东西明明是圆的，大家却都说它是方的？", o: ["盘子", "篮球", "方向盘", "月饼"], a: "C" },
+            { q: "什么东西越洗越脏，不洗才有人吃？", o: ["水果", "水", "衣服", "米饭"], a: "B" },
+            { q: "什么路不能走？", o: ["公路", "电路", "马路", "小路"], a: "B" },
+            { q: "什么东西有五个头？", o: ["怪物", "手和脚", "石头", "云朵"], a: "B" },
+            { q: "什么东西能载一百捆干草，但载不走沙子？", o: ["卡车", "船", "风", "飞机"], a: "C" },
+            { q: "什么情况下一山能容二虎？", o: ["一公一母", "老虎很小", "山很大", "只有一只虎"], a: "A" },
+            { q: "什么门关不上？", o: ["防盗门", "球门", "后门", "冰箱门"], a: "B" },
+            { q: "什么书买不到？", o: ["教科书", "秘书", "漫画书", "百科全书"], a: "B" },
+            { q: "什么路不能走？", o: ["山路", "电路", "公路", "小路"], a: "B" },
+            { q: "什么牛不会吃草？", o: ["水牛", "蜗牛", "奶牛", "黄牛"], a: "B" },
+            { q: "什么瓜不能吃？", o: ["西瓜", "冬瓜", "傻瓜", "南瓜"], a: "C" },
+            { q: "什么针不能缝衣服？", o: ["绣花针", "大头针", "指南针", "缝衣针"], a: "C" },
+            { q: "什么帽不能戴？", o: ["草帽", "礼貌", "军帽", "太阳帽"], a: "B" },
+            { q: "什么床不能睡？", o: ["木床", "牙床", "铁床", "双人床"], a: "B" },
+            { q: "什么鱼不能吃？", o: ["金鱼", "木鱼", "鲤鱼", "草鱼"], a: "B" },
+            { q: "什么酒不能喝？", o: ["白酒", "啤酒", "碘酒", "红酒"], a: "C" },
+            { q: "什么蛋不能吃？", o: ["鸡蛋", "鸭蛋", "笨蛋", "鹅蛋"], a: "C" },
+            { q: "什么花不会开？", o: ["玫瑰花", "烟花", "菊花", "梅花"], a: "B" },
+            { q: "什么车不会跑？", o: ["汽车", "风车", "火车", "自行车"], a: "B" },
+            { q: "什么鸟不会飞？", o: ["麻雀", "鸵鸟", "燕子", "鸽子"], a: "B" },
+            { q: "什么球不能踢？", o: ["足球", "篮球", "眼球", "排球"], a: "C" },
+            { q: "什么菜不能吃？", o: ["白菜", "青菜", "晕菜", "萝卜"], a: "C" }
+
+        ];
+
+        let spins = 0;
+        let diamonds = 0;
+        let isSpinning = false;
+        let grandPrizeLocked = false;
+        let currentTargetPrize = null; // 存储当前正在解锁的大奖对象
+        let currentCheatCode = "";
+        let userRewards = [];
+        let pendingReward = null;
+        let doneTasks = { 1: false, 2: false, 3: false, 4: false };
+        let usedRiddleIndices = [];
+
+        // Elements
+        const gridEl = document.getElementById('lotteryGrid');
+        const spinCountEl = document.getElementById('spinCount');
+        const diamondCountEl = document.getElementById('diamondCount');
+        const unlockCard = document.getElementById('unlockCard');
+        const bgm = document.getElementById('bgm');
+
+        function init() {
+            prizes.forEach((p, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.id = `cell-${index}`;
+                cell.innerHTML = `<img src="${p.img}" alt="gift"><span>${p.name.split('\n')[0]}</span>`;
+                gridEl.appendChild(cell);
+            });
+            document.body.addEventListener('click', () => { if (bgm.paused) bgm.play().catch(() => { }); }, { once: true });
+        }
+        init();
+
+        function startSpin() {
+            if (isSpinning) return;
+            if (spins <= 0) {
+                alert("抽奖次数不足，请先做任务！");
+                openModal('taskModal'); renderTasks();
+                return;
+            }
+
+            isSpinning = true;
+            spins--;
+            updateUI();
+
+            let targetIndex = Math.floor(Math.random() * 11);
+
+            // 暴击逻辑
+            if (spins === 6 && !grandPrizeLocked) {
+                const cheatMap = { 'lsy': 11, 'wjx': 12, 'yfk': 13, 'hi2026': 14, 'jymyyds': 15 };
+                if (cheatMap[currentCheatCode]) targetIndex = cheatMap[currentCheatCode];
+            }
+
+            // 极速抽奖逻辑 (2.5s)
+            let currentIndex = 0;
+            let speed = 30;
+            let steps = 0;
+            const minSteps = 16 * 2 + targetIndex;
+
+            function step() {
+                document.querySelectorAll('.cell').forEach(c => c.classList.remove('active'));
+                const actualIndex = currentIndex % 16;
+                document.getElementById(`cell-${actualIndex}`).classList.add('active');
+
+                if (steps >= minSteps) {
+                    isSpinning = false;
+                    handleWin(targetIndex);
+                } else {
+                    steps++;
+                    currentIndex++;
+                    const stepsRemaining = minSteps - steps;
+                    if (stepsRemaining < 8) speed += 50 + (8 - stepsRemaining) * 10;
+                    setTimeout(step, speed);
+                }
+            }
+            step();
+        }
+
+        function handleWin(index) {
+            const prize = prizes[index];
+            pendingReward = prize;
+            document.getElementById('resultImage').src = prize.img;
+            document.getElementById('resultName').innerText = prize.name;
+            setTimeout(() => openModal('resultModal'), 200);
+        }
+
+        function claimReward() {
+            closeModal('resultModal');
+            if (!pendingReward) return;
+
+            // 记录奖励
+            if (pendingReward.type !== 0) userRewards.push(pendingReward);
+
+            if (pendingReward.type === 2) {
+                diamonds += 10;
+            } else if (pendingReward.type === 3) {
+                alert("⚠️ 哇！抽中【神秘大奖】！\n\n但还需要收集150个钻石才能真正解锁带走！");
+                triggerGrandPrizeMode(pendingReward);
+            }
+
+            updateUI();
+            pendingReward = null;
+        }
+
+        function triggerGrandPrizeMode(prize) {
+            if (grandPrizeLocked) return;
+            grandPrizeLocked = true;
+            currentTargetPrize = prize;
+
+            // 填充卡片信息
+            document.getElementById('targetPrizeImg').src = prize.img;
+            document.getElementById('targetPrizeName').innerText = prize.name;
+
+            unlockCard.style.display = 'block';
+            document.getElementById('taskTitle').innerText = "答题赢钻石";
+
+            // 滚动到底部让用户看到新卡片
+            setTimeout(() => {
+                document.querySelector('.main-content').scrollTop = document.querySelector('.main-content').scrollHeight;
+            }, 300);
+        }
+
+        function unlockGrandPrize() {
+            if (diamonds >= 150) {
+                if (currentTargetPrize) {
+                    document.getElementById('grandPrizeImg').src = currentTargetPrize.img;
+                    document.getElementById('grandPrizeText').innerText = currentTargetPrize.name;
+                    openModal('unlockSuccessModal');
+                    diamonds -= 150;
+                    updateUI();
+                }
+            } else {
+                alert("钻石不足！快去[获取次数]答题赚钻石吧！");
+            }
+        }
+
+        function updateUI() {
+            spinCountEl.innerText = spins;
+            diamondCountEl.innerText = diamonds;
+
+            // 奖励列表更新
+            const list = document.getElementById('myRewardsList');
+            if (userRewards.length === 0) list.innerHTML = "<p style='text-align:center;color:#999;font-size:0.9rem'>暂无</p>";
+            else list.innerHTML = userRewards.map(r => `<div style="display:flex;align-items:center;padding:5px;border-bottom:1px solid #eee"><img src="${r.img}" style="width:30px;height:30px;margin-right:10px"><div>${r.name.replace('\n', ' ')}</div></div>`).join('');
+
+            // 解锁卡片状态更新
+            if (grandPrizeLocked) {
+                const bar = document.getElementById('progressBar');
+                const txt = document.getElementById('progressText');
+                const btn = document.getElementById('unlockBtn');
+
+                let pct = Math.min((diamonds / 150) * 100, 100);
+                bar.style.width = pct + "%";
+                txt.innerText = `${diamonds}/150`;
+
+                if (diamonds >= 150) {
+                    btn.classList.add('active');
+                    btn.innerHTML = "🔓 钻石已满，点击立即解锁！";
+                    btn.style.background = "linear-gradient(90deg, #11998e, #38ef7d)";
+                } else {
+                    btn.classList.remove('active');
+                    btn.innerHTML = `🔒 需150钻石解锁 (还差${150 - diamonds})`;
+                    btn.style.background = "#ccc";
+                }
+            }
+        }
+
+        // --- 任务逻辑 ---
+        function renderTasks() {
+            const container = document.getElementById('taskListContent');
+            container.innerHTML = "";
+
+            if (!grandPrizeLocked) {
+                if (!doneTasks[1]) addTask(container, "1. 靳雨默生日 (YYYY-MM-DD)", "date", "input-dob", checkTask1);
+                if (!doneTasks[2]) addRadioTask(container);
+                if (!doneTasks[3]) addTask(container, "3. 神秘代码", "text", "input-code-10", checkTask3);
+                if (!doneTasks[4]) addTask(container, "4. 暴击代码", "text", "input-cheat", checkTask4);
+            } else {
+                // 谜语模式
+                let availableIndices = riddles.map((_, i) => i).filter(i => !usedRiddleIndices.includes(i));
+                if (availableIndices.length === 0) { container.innerHTML = "<p>题库已空</p>"; return; }
+
+                const rIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+                const riddle = riddles[rIndex];
+
+                const div = document.createElement('div');
+                div.className = 'task-item';
+                div.innerHTML = `
+                <div style="font-weight:bold;margin-bottom:5px;">${riddle.q}</div>
+                ${riddle.o.map((opt, i) => `<label style="display:block;margin:3px 0;"><input type="radio" name="riddle-opt" value="${String.fromCharCode(65 + i)}"> ${String.fromCharCode(65 + i)}. ${opt}</label>`).join('')}
+                <button class="task-btn" onclick="checkRiddle(${rIndex}, '${riddle.a}')">提交 (+1次)</button>
+            `;
+                container.appendChild(div);
+            }
+        }
+
+        function addTask(parent, label, type, id, fn) {
+            const div = document.createElement('div');
+            div.className = 'task-item';
+            div.innerHTML = `<label style="font-weight:bold">${label}</label><input type="${type}" id="${id}" class="task-input"><button class="task-btn" id="btn-${id}">提交</button>`;
+            parent.appendChild(div);
+            document.getElementById(`btn-${id}`).onclick = fn;
+        }
+        function addRadioTask(parent) {
+            const div = document.createElement('div');
+            div.className = 'task-item';
+            div.innerHTML = `<label style="font-weight:bold">2. 哪个是靳雨默的ID？</label>
+        <label style="display:block"><input type="radio" name="id-opt" value="A"> A. 海面上有</label>
+        <label style="display:block"><input type="radio" name="id-opt" value="B"> B. 海面上没有</label>
+        <label style="display:block"><input type="radio" name="id-opt" value="C"> C. 文山彭于晏</label>
+        <label style="display:block"><input type="radio" name="id-opt" value="D"> D. 文山第一深情</label>
+        <button class="task-btn" style="margin-top:5px" onclick="checkTask2()">提交 (+1次)</button>`;
+            parent.appendChild(div);
+        }
+
+        function checkTask1() { if (document.getElementById('input-dob').value === '2008-02-26') { alert('正确！+1次'); spins++; doneTasks[1] = true; updateUI(); renderTasks(); } else alert('错误'); }
+        function checkTask2() { const sel = document.querySelector('input[name="id-opt"]:checked'); if (sel && sel.value === 'A') { alert('正确！+1次'); spins++; doneTasks[2] = true; updateUI(); renderTasks(); } else alert('错误'); }
+        function checkTask3() { if (document.getElementById('input-code-10').value === 'overblue026') { alert('正确！+10次'); spins += 10; doneTasks[3] = true; updateUI(); renderTasks(); } else alert('无效'); }
+        function checkTask4() { const val = document.getElementById('input-cheat').value.trim(); if (val) { currentCheatCode = val; doneTasks[4] = true; alert('某种神秘正在降临...'); renderTasks(); } }
+        function checkRiddle(idx, ans) { const sel = document.querySelector('input[name="riddle-opt"]:checked'); if (sel && sel.value === ans) { alert('正确！+1次'); spins++; usedRiddleIndices.push(idx); updateUI(); renderTasks(); } else alert('错误'); }
+
+        // Helpers
+        window.openModal = (id) => { const m = document.getElementById(id); m.style.display = 'flex'; setTimeout(() => m.classList.add('show'), 10); };
+        window.closeModal = (id) => { const m = document.getElementById(id); m.classList.remove('show'); setTimeout(() => m.style.display = 'none', 200); };
+    </script>
+</body>
+
+</html>
