@@ -240,19 +240,37 @@
             z-index: 2;
         }
 
+        /* 底部按钮组：解锁和更换 */
+        .card-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 5px;
+        }
+
         .btn-unlock {
-            width: 100%;
+            flex: 2; /* 占据主要空间 */
             padding: 10px;
             background: #ccc;
             color: #fff;
             border-radius: 8px;
-            font-size: 1rem;
-            margin-top: 5px;
+            font-size: 0.95rem;
         }
 
         .btn-unlock.active {
             background: linear-gradient(90deg, #11998e, #38ef7d);
             animation: pulse 1.5s infinite;
+        }
+        
+        /* 更换奖励按钮 */
+        .btn-change {
+            flex: 1;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            color: #fff;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            display: none; /* 默认隐藏 */
+            white-space: nowrap;
         }
 
         /* 底部单独的友情链接 */
@@ -296,6 +314,22 @@
         .task-input { width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; margin: 5px 0; }
         .task-btn { background: var(--primary-red); color: #fff; padding: 5px 10px; border-radius: 4px; width: 100%; font-size: 0.85rem; }
         .result-img { width: 120px; height: 120px; margin: 0 auto 15px; display: block; object-fit: contain; }
+        
+        /* 更换奖励弹窗的选项样式 */
+        .change-option {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            border: 2px solid var(--gold);
+        }
+        .change-option img { width: 40px; height: 40px; margin-right: 10px; }
+        
+        .modal-btn-group { display: flex; gap: 10px; }
+        .btn-confirm { flex: 1; background: var(--primary-red); color: #fff; padding: 10px; border-radius: 8px; }
+        .btn-cancel { flex: 1; background: #eee; color: #333; padding: 10px; border-radius: 8px; }
 
         @keyframes pulse {
             0% { transform: scale(1); }
@@ -345,13 +379,35 @@
                 <div class="progress-bar" id="progressBar"></div>
                 <div class="progress-text" id="progressText">0/120</div>
             </div>
-            <button class="btn-unlock" id="unlockBtn" onclick="unlockGrandPrize()">钻石不足，去答题！</button>
+            
+            <div class="card-buttons">
+                <button class="btn-unlock" id="unlockBtn" onclick="unlockGrandPrize()">钻石不足，去答题！</button>
+                <button class="btn-change" id="changePrizeBtn" onclick="openChangeRewardModal()">更换为<br>其他奖励</button>
+            </div>
         </div>
     </div>
 
     <div class="footer-simple">
         <div class="friend-link">
             <a href="http://camera.overblue.cn" target="_blank">camera.overblue.cn</a>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="changeModal">
+        <div class="modal">
+            <span class="close-btn" onclick="closeModal('changeModal')">&times;</span>
+            <div class="modal-title">更换解锁目标</div>
+            <p style="text-align:center; margin-bottom:15px; font-size:0.9rem;">确定要更换为以下奖励吗？<br>(当前钻石进度将保留)</p>
+            
+            <div class="change-option">
+                <img src="./image/special.png" alt="Icon">
+                <div style="font-weight:bold;">靳雨默的专属祝福</div>
+            </div>
+
+            <div class="modal-btn-group">
+                <button class="btn-cancel" onclick="closeModal('changeModal')">取消</button>
+                <button class="btn-confirm" onclick="confirmChangeReward()">确认更换</button>
+            </div>
         </div>
     </div>
 
@@ -396,18 +452,19 @@
 
     <script>
         // --- 数据定义 ---
+        // 钻石奖励已全部调整为20个 (type 2)
         const prizes = [
             { id: 0, name: "谢谢参与\n再接再厉", type: 0, img: "./image/thanks.png" },
             { id: 1, name: "马到成功！\n万事如意！", type: 1, img: "./image/bless1.png" },
             { id: 2, name: "谢谢参与\n下次好运", type: 0, img: "./image/thanks.png" },
             { id: 3, name: "马上有钱\n马年喜乐！！", type: 1, img: "./image/bless2.png" },
-            { id: 4, name: "10个钻石", type: 2, img: "./image/diamond.png" },
+            { id: 4, name: "20个钻石", type: 2, img: "./image/diamond.png" },
             { id: 5, name: "心想事成\n好运连连！", type: 1, img: "./image/bless3.png" },
-            { id: 6, name: "10个钻石", type: 2, img: "./image/diamond.png" },
+            { id: 6, name: "20个钻石", type: 2, img: "./image/diamond.png" },
             { id: 7, name: "身体健康\n平安喜乐！", type: 1, img: "./image/bless4.png" },
-            { id: 8, name: "10个钻石", type: 2, img: "./image/diamond.png" },
+            { id: 8, name: "20个钻石", type: 2, img: "./image/diamond.png" },
             { id: 9, name: "谢谢参与\n擦肩而过", type: 0, img: "./image/thanks.png" },
-            { id: 10, name: "10个钻石", type: 2, img: "./image/diamond.png" },
+            { id: 10, name: "20个钻石", type: 2, img: "./image/diamond.png" },
             // 神秘大奖 (type 3)
             { id: 11, name: "361°精致喷雾", type: 3, code: 'lsy', img: "./image/spray.png" },
             { id: 12, name: "古茗奶茶一杯", type: 3, code: 'wjx', img: "./image/guming.png" },
@@ -416,7 +473,7 @@
             { id: 15, name: "靳雨默的专属祝福", type: 3, code: 'jymyyds', img: "./image/special.png" }
         ];
 
-        // 暴击代码映射表 (移到全局以便验证)
+        // 暴击代码映射表
         const cheatMap = { 'lsy': 11, 'wjx': 12, 'yfk': 13, 'hi2026': 14, 'jymyyds': 15 };
 
         const riddles = [
@@ -472,7 +529,7 @@
         function startSpin() {
             if (isSpinning) return;
 
-            // --- 修改：强制检查前置任务 ---
+            // 强制检查前置任务
             if (!doneTasks[3] || !doneTasks[4]) {
                 alert("🔒 请先完成【神秘代码】和【暴击代码】任务\n才能激活抽奖系统！");
                 openModal('taskModal');
@@ -487,12 +544,12 @@
             }
 
             isSpinning = true;
-            spins--; // 扣除次数
+            spins--; 
             updateUI();
 
             let targetIndex = Math.floor(Math.random() * 11);
 
-            // 暴击逻辑：最后一次抽奖生效 (spins 已经减为 0)
+            // 暴击逻辑：最后一次抽奖生效
             if (spins === 0 && !grandPrizeLocked) {
                 if (cheatMap[currentCheatCode]) targetIndex = cheatMap[currentCheatCode];
             }
@@ -538,7 +595,7 @@
             if (pendingReward.type !== 0) userRewards.push(pendingReward);
 
             if (pendingReward.type === 2) {
-                diamonds += 10;
+                diamonds += 20; // 改为20
             } else if (pendingReward.type === 3) {
                 alert("⚠️ 哇！抽中【神秘大奖】！\n\n但还需要收集120个钻石才能真正解锁带走！");
                 triggerGrandPrizeMode(pendingReward);
@@ -560,14 +617,42 @@
             unlockCard.style.display = 'block';
             document.getElementById('taskTitle').innerText = "答题赢钻石";
 
-            // 滚动到底部让用户看到新卡片
+            // 判断是否显示更换按钮 (仅ID=14时)
+            const changeBtn = document.getElementById('changePrizeBtn');
+            if (prize.id === 14) {
+                changeBtn.style.display = 'block';
+            } else {
+                changeBtn.style.display = 'none';
+            }
+
+            // 滚动到底部
             setTimeout(() => {
                 document.querySelector('.main-content').scrollTop = document.querySelector('.main-content').scrollHeight;
             }, 300);
         }
 
+        function openChangeRewardModal() {
+            openModal('changeModal');
+        }
+
+        function confirmChangeReward() {
+            // 切换为 ID 15 (专属祝福)
+            const newPrize = prizes[15]; // index 15
+            currentTargetPrize = newPrize;
+            
+            // 更新UI
+            document.getElementById('targetPrizeImg').src = newPrize.img;
+            document.getElementById('targetPrizeName').innerText = newPrize.name;
+            document.getElementById('grandPrizeImg').src = newPrize.img; // 预备结果弹窗
+            
+            // 隐藏更换按钮 (已经换过了)
+            document.getElementById('changePrizeBtn').style.display = 'none';
+            
+            closeModal('changeModal');
+            alert("更换成功！当前钻石进度已保留。");
+        }
+
         function unlockGrandPrize() {
-            // 修改：判断改为120个钻石
             const unlockCost = 120;
             if (diamonds >= unlockCost) {
                 if (currentTargetPrize) {
@@ -586,18 +671,15 @@
             spinCountEl.innerText = spins;
             diamondCountEl.innerText = diamonds;
 
-            // 奖励列表更新
             const list = document.getElementById('myRewardsList');
             if (userRewards.length === 0) list.innerHTML = "<p style='text-align:center;color:#999;font-size:0.9rem'>暂无</p>";
             else list.innerHTML = userRewards.map(r => `<div style="display:flex;align-items:center;padding:5px;border-bottom:1px solid #eee"><img src="${r.img}" style="width:30px;height:30px;margin-right:10px"><div>${r.name.replace('\n', ' ')}</div></div>`).join('');
 
-            // 解锁卡片状态更新
             if (grandPrizeLocked) {
                 const bar = document.getElementById('progressBar');
                 const txt = document.getElementById('progressText');
                 const btn = document.getElementById('unlockBtn');
                 
-                // 修改：进度条分母改为120
                 const target = 120;
                 let pct = Math.min((diamonds / target) * 100, 100);
                 bar.style.width = pct + "%";
@@ -628,7 +710,7 @@
             } else {
                 // 谜语模式
                 let availableIndices = riddles.map((_, i) => i).filter(i => !usedRiddleIndices.includes(i));
-                if (availableIndices.length === 0) { container.innerHTML = "<p>题库已空</p>"; return; }
+                if (availableIndices.length === 0) { container.innerHTML = "<p>题库已空！解锁失败，请刷新再试😏</p>"; return; }
 
                 const rIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
                 const riddle = riddles[rIndex];
@@ -680,7 +762,6 @@
             const val = document.getElementById('input-cheat').value.trim();
             if (!/^[a-zA-Z0-9]+$/.test(val)) { alert("请输入纯字母或数字！"); return; }
             
-            // 修改：验证代码是否在映射表中
             if (cheatMap.hasOwnProperty(val)) {
                 currentCheatCode = val; 
                 doneTasks[4] = true; 
