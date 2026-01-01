@@ -535,14 +535,13 @@
             { q: "什么鸟不会飞？", o: ["麻雀", "鸵鸟", "燕子", "鸽子"], a: "B" },
             { q: "什么球不能踢？", o: ["足球", "篮球", "眼球", "排球"], a: "C" },
             { q: "什么菜不能吃？", o: ["白菜", "青菜", "晕菜", "萝卜"], a: "C" }
-
         ];
 
         let spins = 0;
         let diamonds = 0;
         let isSpinning = false;
         let grandPrizeLocked = false;
-        let currentTargetPrize = null; // 存储当前正在解锁的大奖对象
+        let currentTargetPrize = null;
         let currentCheatCode = "";
         let userRewards = [];
         let pendingReward = null;
@@ -577,13 +576,13 @@
             }
 
             isSpinning = true;
-            spins--;
+            spins--; // 扣除次数
             updateUI();
 
             let targetIndex = Math.floor(Math.random() * 11);
 
-            // 暴击逻辑
-            if (spins === 6 && !grandPrizeLocked) {
+            // 暴击逻辑：最后一次抽奖生效 (spins 已经减为 0)
+            if (spins === 0 && !grandPrizeLocked) {
                 const cheatMap = { 'lsy': 11, 'wjx': 12, 'yfk': 13, 'hi2026': 14, 'jymyyds': 15 };
                 if (cheatMap[currentCheatCode]) targetIndex = cheatMap[currentCheatCode];
             }
@@ -711,7 +710,7 @@
                 if (!doneTasks[1]) addTask(container, "1. 靳雨默生日 (YYYY-MM-DD)", "date", "input-dob", checkTask1);
                 if (!doneTasks[2]) addRadioTask(container);
                 if (!doneTasks[3]) addTask(container, "3. 神秘代码", "text", "input-code-10", checkTask3);
-                if (!doneTasks[4]) addTask(container, "4. 暴击代码", "text", "input-cheat", checkTask4);
+                if (!doneTasks[4]) addTask(container, "4. 暴击代码 (最后一次生效)", "text", "input-cheat", checkTask4); // 修改了提示文案
             } else {
                 // 谜语模式
                 let availableIndices = riddles.map((_, i) => i).filter(i => !usedRiddleIndices.includes(i));
@@ -752,8 +751,27 @@
 
         function checkTask1() { if (document.getElementById('input-dob').value === '2008-02-26') { alert('正确！+1次'); spins++; doneTasks[1] = true; updateUI(); renderTasks(); } else alert('错误'); }
         function checkTask2() { const sel = document.querySelector('input[name="id-opt"]:checked'); if (sel && sel.value === 'A') { alert('正确！+1次'); spins++; doneTasks[2] = true; updateUI(); renderTasks(); } else alert('错误'); }
-        function checkTask3() { if (document.getElementById('input-code-10').value === 'overblue026') { alert('正确！+10次'); spins += 10; doneTasks[3] = true; updateUI(); renderTasks(); } else alert('无效'); }
-        function checkTask4() { const val = document.getElementById('input-cheat').value.trim(); if (val) { currentCheatCode = val; doneTasks[4] = true; alert('某种神秘正在降临...'); renderTasks(); } }
+
+        function checkTask3() {
+            const inputVal = document.getElementById('input-code-10').value.trim();
+            // 校验：只允许字母和数字
+            if (!/^[a-zA-Z0-9]+$/.test(inputVal)) {
+                alert("请输入纯字母或数字！");
+                return;
+            }
+            if (inputVal === 'overblue026') { alert('正确！+10次'); spins += 10; doneTasks[3] = true; updateUI(); renderTasks(); } else alert('无效');
+        }
+
+        function checkTask4() {
+            const val = document.getElementById('input-cheat').value.trim();
+            // 校验：只允许字母和数字
+            if (!/^[a-zA-Z0-9]+$/.test(val)) {
+                alert("请输入纯字母或数字！");
+                return;
+            }
+            if (val) { currentCheatCode = val; doneTasks[4] = true; alert('某种神秘正在降临...'); renderTasks(); }
+        }
+
         function checkRiddle(idx, ans) { const sel = document.querySelector('input[name="riddle-opt"]:checked'); if (sel && sel.value === ans) { alert('正确！+1次'); spins++; usedRiddleIndices.push(idx); updateUI(); renderTasks(); } else alert('错误'); }
 
         // Helpers
